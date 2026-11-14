@@ -271,15 +271,61 @@ Graph* Gpk_Kruskal(Graph* G){
     return Min_Tree;
 }
 
+Graph* Gpk_Primm(Graph* G){
+    if(!G || !G->at) return NULL;
+    AbsEdge* edges = malloc((G->nV - 1) * sizeof(AbsEdge));
+    GraphGenerator Gg = { 
+        edges, 
+        0,
+    };
+    bool* inT = calloc(G->nV, sizeof(bool));
+    int* W = malloc(G->nV*sizeof(int)), nW = 1;
+    W[0] = 0;
+    inT[0] = true;
+
+    while(nW < G->nV){
+        AbsEdge e_min;
+        int find = false;
+        for(int i = 0; i < nW; i++){
+            int u = W[i];
+            for(int j = 0; j < G->at[W[i]].num_neighbors; j++){
+                int v = G->at[u].neighbors[j].id;
+                int w = G->at[u].neighbors[j].weight;
+                if(inT[v]) continue;
+    
+                if(!find || w < e_min.weight){
+                    e_min.from = u;
+                    e_min.weight = w;
+                    e_min.to = v;
+                    find = true;
+                }
+            }
+        }
+        if(!find) break;
+        Gg.edges[Gg.n_edges++] = e_min;
+        W[nW++] = e_min.to;
+        inT[e_min.to] = true;
+    }
+
+    Graph* T = new_Graph(&Gg);
+    
+    free(edges);
+    free(W);
+    free(inT);
+
+    return T;
+}
+
 int main(){
     AbsEdge A[] = {
-        {1, 0, 2},
-        {3, 0, 6},
-        {2, 1, 3},
-        {3, 1, 8},
-        {4, 1, 5},
-        {4 ,2, 7},
-        {4, 3, 9}
+        {0, 1, 2},
+        {0, 3, 7},
+        {0, 4, 4},
+        {1, 2, 8},
+        {1, 4, 7},
+        {2, 3, 11},
+        {2, 5, 10},
+        {4, 5, 5}
     };
 
     GraphGenerator Gg = {
@@ -287,9 +333,19 @@ int main(){
         sizeof(A) / sizeof(A[0])
     };
     Graph* gp = new_Graph(&Gg);
+    printf("Grafo:\n");
     print_graph(gp);    
     
-    Graph* Min_Tree = Gpk_Kruskal(gp);
+    Graph* Min_Tree = Gpk_Primm(gp);
+    printf("Primm:\n");
     print_graph(Min_Tree);
+    Gpk_free(&Min_Tree);
+
+    Min_Tree = Gpk_Kruskal(gp);
+    printf("Kruskal:\n");
+    print_graph(Min_Tree);
+
+    Gpk_free(&Min_Tree);
+    Gpk_free(&gp);
     return 0;
 }
