@@ -1,34 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "stack.h"
-
-typedef uint32_t uint;
-
-typedef enum {false, true} bool;
-
-typedef struct{
-    int id, weight;
-}RelEdge;
-
-typedef struct{
-    int to, from, weight;
-}AbsEdge;
-
-typedef struct{
-    RelEdge* neighbors;
-    int num_neighbors, cap;
-}Vertex;
-
-typedef struct{
-    Vertex* at;
-    int nV, nE;
-}Graph;
-
-typedef struct{
-    AbsEdge* edges;
-    int n_edges;
-}GraphGenerator;
+#include "Gpk.h"
 
 //o programador deve colocar sequencialmente 0, 1, .., N vertices.
 //caso contrario, uma aresta nao declarada entre duas declaradas vai ser tida como existente, mas sem conexão
