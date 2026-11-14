@@ -6,6 +6,7 @@
 typedef uint32_t uint;
 
 typedef enum {false, true} bool;
+
 typedef struct{
     int id, weight;
 }RelEdge;
@@ -172,12 +173,13 @@ int Gpk_addEdge(Graph* G, AbsEdge edge){
     return 1;
 }
 
-int Gpk_hasCycle(Graph* G){
+bool Gpk_hasCycle(Graph* G){
     if(!G || !G->at) exit(1);
     bool* removed = calloc(G->nV, sizeof(bool));
     bool* in_the_way = calloc(G->nV, sizeof(bool));
+    int* next_neighboard = calloc(G->nV, sizeof(int));
     stack* ret = new_stack();
-
+    bool res = false;
     //itera o algoritmo começando de todos os vertices (caso de ser desconexo)
     for(int s = 0; s < G->nV; s++){
         if(removed[s]) continue;
@@ -187,19 +189,18 @@ int Gpk_hasCycle(Graph* G){
         while(1){
             bool jump = false;
             //olha todos os vizinhos
-            for(int i = 0; i < G->at[idx].num_neighbors; i++){
+            for(int i = next_neighboard[idx]; i < G->at[idx].num_neighbors; i++){
                 int neigh = G->at[idx].neighbors[i].id;
                 
                 if(removed[neigh]) continue; 
                 //se o vizinho for o topo do retorno, voce volta de onde veio, o que nao deve acontecer
                 if(!stk_isempty(ret) && stk_top(ret) == neigh) continue; //se a pilha de retorno estiver vazia vai pra qualquer um
                 if(in_the_way[neigh]) {
-                    free_stk(&ret);
-                    free(in_the_way);
-                    free(removed);
-                    return 1; //se o vizinho nao é o ultimo vertice mas ja foi visitado, temos um ciclo
+                    res = true; //se o vizinho nao é o ultimo vertice mas ja foi visitado, temos um ciclo
+                    goto fim;
                 }
                 jump = true;
+                next_neighboard[idx] = i + 1;
                 stk_push(ret, idx);
                 idx = neigh;
                 in_the_way[idx] = true;
@@ -215,10 +216,12 @@ int Gpk_hasCycle(Graph* G){
         }
     }     
     
+fim:
     free_stk(&ret);
     free(in_the_way);
+    free(next_neighboard);
     free(removed);
-    return 0;
+    return res;
 }
 
 Graph* new_blank_graph(int nV){
@@ -230,12 +233,12 @@ Graph* new_blank_graph(int nV){
         G->at[i].cap = 4;
         G->at[i].neighbors = calloc(4, sizeof(RelEdge));
         if(!G->at[i].neighbors) {
-            if(!G->at[i].neighbors){
-                for(int k = 0; k < i; k++) free(G->at[k].neighbors);
+            for(int k = 0; k < i; k++){
+                free(G->at[k].neighbors);
                 free(G->at);
                 free(G);
-                return NULL;
             }
+            return NULL;
         }
     }
     G->nV = nV;
@@ -270,14 +273,13 @@ Graph* Gpk_Kruskal(Graph* G){
 
 int main(){
     AbsEdge A[] = {
-        {0, 1, 2},
-        {0, 3, 7},
-        {0, 4, 4},
-        {1, 2, 8},
-        {2, 3, 11},
-        {2, 5, 10},
-        {1, 4, 7},
-        {5, 4, 5}
+        {1, 0, 2},
+        {3, 0, 6},
+        {2, 1, 3},
+        {3, 1, 8},
+        {4, 1, 5},
+        {4 ,2, 7},
+        {4, 3, 9}
     };
 
     GraphGenerator Gg = {

@@ -1,5 +1,5 @@
-- Algoritmo de Detecção de Ciclo
-- Algoritmo se é conectado
+- Algoritmo de Detecção de Ciclo (V)
+- Algoritmo se é conectado  
 - Gerador de grafos aleatorios
 - Primm e Kruskral (medição)
 - Algoritmo de Conjunto desconectante
