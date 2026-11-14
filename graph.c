@@ -1,11 +1,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "stack.h"
 
 typedef uint32_t uint;
-#define EDGE_LEN 3
 
-
+typedef enum {false, true} bool;
 typedef struct{
     int id, weight;
 }RelEdge;
@@ -38,7 +38,7 @@ Graph* new_Graph(GraphGenerator* Gg){
     Graph* gp = malloc(sizeof(Graph));
     if(!gp) return NULL;
 
-    int max = 0;
+    int max = 0; 
     for(int i = 0; i < n_edges; i++){
         if(Gg->edges[i].to > max) max = Gg->edges[i].to;
         if(Gg->edges[i].from > max) max = Gg->edges[i].from;
@@ -50,7 +50,6 @@ Graph* new_Graph(GraphGenerator* Gg){
     if(!gp->at){
         exit(1);
     }
-
     for(int i = 0; i < gp->nV; i++){
         gp->at[i].neighbors = calloc((gp->nV - 1),  sizeof(RelEdge));
         if(!gp->at[i].neighbors) return NULL;
@@ -92,6 +91,7 @@ GraphGenerator* Gpk_GraphToGenerator(Graph* G){
     int Acont = 0;
     for(int i = 0; i < G->nV; i++){
         Vertex v_cur = G->at[i];
+        int max = 0;
         for(int j = 0; j < G->at[i].num_neighbors; j++){
             if(v_cur.neighbors[j].id < i) continue;
             A[Acont].to = i;
@@ -106,24 +106,7 @@ GraphGenerator* Gpk_GraphToGenerator(Graph* G){
     return Gg;
 }
 
-int main(){
-    AbsEdge A[] = {
-        {0, 1, 2},
-        {0, 3, 7},
-        {0, 4, 4},
-        {1, 2, 8},
-        {2, 3, 11},
-        {1, 4, 7},
-        {5, 7, 5}
-    };
-
-    GraphGenerator Gg = {
-        A,
-        sizeof(A) / sizeof(A[0])
-    };
-
-    Graph* gp = new_Graph(&Gg);
-    
+void print_graph(Graph* gp){
     for(int i = 0; i < gp->nV; i++){
         printf("%d : [", i);
         for(int j = 0; j < gp->at[i].num_neighbors; j++){
@@ -132,12 +115,89 @@ int main(){
         }
         printf("]\n");
     }
+    putchar('\n');
+}
 
-    Gg = *Gpk_GraphToGenerator(gp);
-
-    for(int i = 0; i < Gg.n_edges; i++){
-        printf("{%d, %d, %d}\n", Gg.edges[i].to, Gg.edges[i].from, Gg.edges[i].weight);
+void print_graph_generator(GraphGenerator* Gg){
+    for(int i = 0; i < Gg->n_edges; i++){
+        printf("{%d, %d, %d}\n", Gg->edges[i].to, Gg->edges[i].from, Gg->edges[i].weight);
     }
+    putchar('\n');
+}
 
+int qcmp(const void* a, const void* b){
+    AbsEdge A = *(AbsEdge*)a;
+    AbsEdge B = *(AbsEdge*)b;
+    return A.weight - B.weight;
+}
+
+int Gpk_hasCicle(Graph* G){
+    if(!G || !G->at) return -1;
+    bool* removed = calloc(G->nV, sizeof(bool));
+    bool* in_the_way = calloc(G->nV, sizeof(bool));
+    stack* ret = new_stack();
+
+    //itera o algoritmo começando de todos os vertices (caso de ser desconexo)
+    for(int s = 0; s < G->nV; s++){
+        if(removed[s]) continue;
+        int idx = s;
+        in_the_way[idx] = true;
+
+        while(1){
+            bool jump = false;
+            //olha todos os vizinhos
+            for(int i = 0; i < G->at[idx].num_neighbors; i++){
+                int neigh = G->at[idx].neighbors[i].id;
+                
+                if(removed[neigh]) continue; 
+                //se o vizinho for o topo do retorno, voce volta de onde veio, o que nao deve acontecer
+                if(!stk_isempty(ret) && stk_top(ret) == neigh) continue; //se a pilha de retorno estiver vazia vai pra qualquer um
+                if(in_the_way[neigh]) return 1; //se o vizinho nao é o ultimo vertice mas ja foi visitado, temos um ciclo
+                
+                jump = true;
+                stk_push(ret, idx);
+                idx = neigh;
+                in_the_way[idx] = true;
+                break;
+            }
+            if(!jump){
+                //se nao teve saída, removemos o vertice do caminho e do grafo, e retornamos
+                in_the_way[idx] = false;
+                removed[idx] = true;
+                if(stk_isempty(ret)) break;
+                idx = stk_pop(ret);
+            }
+        }
+    }     
+    
+    free_stk(&ret);
+    free(in_the_way);
+    free(removed);
+    return 0;
+}
+
+int main(){
+    AbsEdge A[] = {
+        {0, 1, 2},
+        {0, 3, 7},
+        {0, 4, 4},
+        {1, 2, 8},
+        {2, 3, 11},
+        {2, 5, 10}
+        //{1, 4, 7},
+    //    {5, 7, 5}
+    };
+
+    GraphGenerator Gg = {
+        A,
+        sizeof(A) / sizeof(A[0])
+    };
+    Graph* gp = new_Graph(&Gg);
+    print_graph(gp);    
+    
+    printf("%d\n", Gpk_hasCicle(gp));
+       
+    print_graph(gp);    
+    
     return 0;
 }

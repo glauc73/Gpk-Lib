@@ -1,0 +1,29 @@
+in_the_way = [false], ret = [], removed = [false]
+
+for(int s = 0; s < G.nV; s++){
+    idx = s;
+    in_the_way[idx] = true;
+    
+    while(1){
+        jump = 0;
+        for(int j = 0; j < G.at[idx].n_neighbors; j++){
+            neigh = G.at[idx].neighbors[j].id;
+            if(removed[neigh]) continue;
+            if(ret.isempty() || ret.top() != neigh){
+                if(in_the_way[neigh]) return 1;
+                jump = 1;
+                ret.push(idx);
+                idx = neigh;
+                in_the_way[idx] = true;
+                break;
+            }
+        }
+        if(jump == 0){
+            in_the_way[idx] = false;
+            removed[idx] = true;
+            if(ret.empty()) break;
+            idx = ret.pop();
+        }
+    }
+}
+return 0;
