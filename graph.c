@@ -16,7 +16,7 @@ typedef struct{
 
 typedef struct{
     RelEdge* neighbors;
-    int num_neighbors;
+    int num_neighbors, cap;
 }Vertex;
 
 typedef struct{
@@ -51,8 +51,14 @@ Graph* new_Graph(GraphGenerator* Gg){
         exit(1);
     }
     for(int i = 0; i < gp->nV; i++){
+        gp->at[i].cap = gp->nV - 1;
         gp->at[i].neighbors = calloc((gp->nV - 1),  sizeof(RelEdge));
-        if(!gp->at[i].neighbors) return NULL;
+        if(!gp->at[i].neighbors){
+            for(int k = 0; k < i; k++) free(gp->at[k].neighbors);
+            free(gp->at);
+            free(gp);
+            return NULL;
+         }
     }
    
     for(int i = 0; i < gp->nE; i++){
@@ -131,8 +137,43 @@ int qcmp(const void* a, const void* b){
     return A.weight - B.weight;
 }
 
-int Gpk_hasCicle(Graph* G){
-    if(!G || !G->at) return -1;
+int Gpk_addEdge(Graph* G, AbsEdge edge){
+    if(!G || !G->at) return 0;
+    
+    int to_nb = G->at[edge.to].num_neighbors;
+    int from_nb = G->at[edge.from].num_neighbors;
+    
+    Vertex* v = &G->at[edge.from];
+    if(v->num_neighbors >= v->cap){
+        int new_cap = v->cap ? 2 * v->cap : 4;
+        RelEdge* tmp = realloc(v->neighbors, new_cap * sizeof(RelEdge));
+        if(!tmp) return 0;
+        v->neighbors = tmp;
+        v->cap = new_cap;
+    }
+    
+    v = &G->at[edge.to];
+    if(v->num_neighbors >= v->cap){
+        int new_cap = v->cap ? 2 * v->cap : 4;
+        RelEdge* tmp = realloc(v->neighbors, new_cap * sizeof(RelEdge));
+        if(!tmp) return 0;
+        v->neighbors = tmp;
+        v->cap = new_cap;
+    }
+    G->at[edge.to].neighbors[to_nb].id = edge.from;
+    G->at[edge.to].neighbors[to_nb].weight = edge.weight;
+    G->at[edge.to].num_neighbors++;
+
+    G->at[edge.from].neighbors[from_nb].id = edge.to;
+    G->at[edge.from].neighbors[from_nb].weight = edge.weight;
+    G->at[edge.from].num_neighbors++;
+
+    G->nE++;
+    return 1;
+}
+
+int Gpk_hasCycle(Graph* G){
+    if(!G || !G->at) exit(1);
     bool* removed = calloc(G->nV, sizeof(bool));
     bool* in_the_way = calloc(G->nV, sizeof(bool));
     stack* ret = new_stack();
@@ -152,8 +193,12 @@ int Gpk_hasCicle(Graph* G){
                 if(removed[neigh]) continue; 
                 //se o vizinho for o topo do retorno, voce volta de onde veio, o que nao deve acontecer
                 if(!stk_isempty(ret) && stk_top(ret) == neigh) continue; //se a pilha de retorno estiver vazia vai pra qualquer um
-                if(in_the_way[neigh]) return 1; //se o vizinho nao é o ultimo vertice mas ja foi visitado, temos um ciclo
-                
+                if(in_the_way[neigh]) {
+                    free_stk(&ret);
+                    free(in_the_way);
+                    free(removed);
+                    return 1; //se o vizinho nao é o ultimo vertice mas ja foi visitado, temos um ciclo
+                }
                 jump = true;
                 stk_push(ret, idx);
                 idx = neigh;
@@ -176,6 +221,53 @@ int Gpk_hasCicle(Graph* G){
     return 0;
 }
 
+Graph* new_blank_graph(int nV){
+    if(nV <= 0) return NULL;
+    Graph* G = malloc(sizeof(Graph));
+    G->at = calloc(nV, sizeof(Vertex));
+
+    for(int i = 0; i < nV; i++){
+        G->at[i].cap = 4;
+        G->at[i].neighbors = calloc(4, sizeof(RelEdge));
+        if(!G->at[i].neighbors) {
+            if(!G->at[i].neighbors){
+                for(int k = 0; k < i; k++) free(G->at[k].neighbors);
+                free(G->at);
+                free(G);
+                return NULL;
+            }
+        }
+    }
+    G->nV = nV;
+    G->nE = 0;
+    return G;
+}
+
+Graph* Gpk_Kruskal(Graph* G){
+    if(!G || !G->at) return NULL;
+    Graph* Min_Tree = new_blank_graph(G->nV);
+    
+    GraphGenerator* Gg = Gpk_GraphToGenerator(G);
+    if(!Gg) return NULL;
+
+    qsort(Gg->edges, Gg->n_edges, sizeof(AbsEdge), qcmp);
+
+    for(int i = 0; i < Gg->n_edges; i++){
+        if(G->nV - 1 == Min_Tree->nE) break;
+        AbsEdge e = Gg->edges[i];
+        if(!Gpk_addEdge(Min_Tree, e)) continue;
+        if(Gpk_hasCycle(Min_Tree) > 0){
+            Min_Tree->at[e.to].num_neighbors--;
+            Min_Tree->at[e.from].num_neighbors--;
+            Min_Tree->nE--;
+        }
+    }
+
+    free(Gg->edges);
+    free(Gg);
+    return Min_Tree;
+}
+
 int main(){
     AbsEdge A[] = {
         {0, 1, 2},
@@ -183,9 +275,9 @@ int main(){
         {0, 4, 4},
         {1, 2, 8},
         {2, 3, 11},
-        {2, 5, 10}
-        //{1, 4, 7},
-    //    {5, 7, 5}
+        {2, 5, 10},
+        {1, 4, 7},
+        {5, 4, 5}
     };
 
     GraphGenerator Gg = {
@@ -195,9 +287,7 @@ int main(){
     Graph* gp = new_Graph(&Gg);
     print_graph(gp);    
     
-    printf("%d\n", Gpk_hasCicle(gp));
-       
-    print_graph(gp);    
-    
+    Graph* Min_Tree = Gpk_Kruskal(gp);
+    print_graph(Min_Tree);
     return 0;
 }
