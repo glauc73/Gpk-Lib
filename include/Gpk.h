@@ -1,5 +1,5 @@
-#ifndef GPK_GRAPH_H
-#define GPK_GRAPH_H
+#ifndef _GPK_H_
+#define _GPK_H_
 
 #include <stdint.h>
 #include "stack.h"

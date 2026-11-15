@@ -1,4 +1,4 @@
 - Algoritmo de Detecção de Ciclo (V)
-- Gerador de grafos aleatorios
+- Gerador de grafos aleatorios (V)
 - Primm e Kruskral (V)
 - Medição de tempo

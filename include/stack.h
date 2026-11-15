@@ -1,3 +1,6 @@
+#ifndef _STACK_H_
+#define _STACK_H_
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -6,7 +9,7 @@ typedef struct{
     int top, size;
 }stack;
 
-stack* new_stack(){
+static inline stack* new_stack(){
     stack* stk = (stack*) malloc(sizeof(stack));
     if(!stk) exit(1);
     stk->size = 32;
@@ -47,3 +50,5 @@ static inline void free_stk(stack **stk){
     free(*stk);
     *stk = NULL;
 }
+
+#endif

@@ -1,58 +1,21 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "Gpk.h"
 
 //o programador deve colocar sequencialmente 0, 1, .., N vertices.
 //caso contrario, uma aresta nao declarada entre duas declaradas vai ser tida como existente, mas sem conexão
 Graph* new_Graph(GraphGenerator* Gg){
     if(!Gg) return NULL;
-    int n_edges = Gg->n_edges;
-
-    Graph* gp = malloc(sizeof(Graph));
-    if(!gp) return NULL;
-
-    int max = 0; 
-    for(int i = 0; i < n_edges; i++){
+    int max = 0;
+    for(int i = 0; i < Gg->n_edges; i++){
         if(Gg->edges[i].to > max) max = Gg->edges[i].to;
         if(Gg->edges[i].from > max) max = Gg->edges[i].from;
     }
-    gp->nV = max + 1;
-    gp->nE = n_edges;
-
-    gp->at = calloc(gp->nV , sizeof(Vertex));
-    if(!gp->at){
-        exit(1);
-    }
-    for(int i = 0; i < gp->nV; i++){
-        gp->at[i].cap = gp->nV - 1;
-        gp->at[i].neighbors = calloc((gp->nV - 1),  sizeof(RelEdge));
-        if(!gp->at[i].neighbors){
-            for(int k = 0; k < i; k++) free(gp->at[k].neighbors);
-            free(gp->at);
-            free(gp);
-            return NULL;
-         }
-    }
-   
-    for(int i = 0; i < gp->nE; i++){
-        int from = Gg->edges[i].from;
-        int to = Gg->edges[i].to;
-        int w = Gg->edges[i].weight;
-
-        int nb_from = gp->at[from].num_neighbors;
-        int nb_to = gp->at[to].num_neighbors;
-
-        gp->at[from].neighbors[nb_from].id = to;
-        gp->at[to].neighbors[nb_to].id = from;
-        
-        gp->at[from].neighbors[nb_from].weight = w;
-        gp->at[to].neighbors[nb_to].weight = w;
-
-        gp->at[from].num_neighbors++;
-        gp->at[to].num_neighbors++;
-    }
-
+    Graph* gp = new_blank_graph(max + 1);   // listas crescem sob demanda
+    if(!gp) return NULL;
+    for(int i = 0; i < Gg->n_edges; i++) Gpk_addEdge(gp, Gg->edges[i]);
     return gp;
 }
 
@@ -151,6 +114,7 @@ bool Gpk_hasCycle(Graph* G){
     bool* removed = calloc(G->nV, sizeof(bool));
     bool* in_the_way = calloc(G->nV, sizeof(bool));
     int* next_neighboard = calloc(G->nV, sizeof(int));
+
     stack* ret = new_stack();
     bool res = false;
     //itera o algoritmo começando de todos os vertices (caso de ser desconexo)
@@ -219,6 +183,7 @@ Graph* new_blank_graph(int nV){
     return G;
 }
 
+
 Graph* Gpk_Kruskal(Graph* G){
     if(!G || !G->at) return NULL;
     Graph* Min_Tree = new_blank_graph(G->nV);
@@ -247,10 +212,12 @@ Graph* Gpk_Kruskal(Graph* G){
 Graph* Gpk_Primm(Graph* G){
     if(!G || !G->at) return NULL;
     AbsEdge* edges = malloc((G->nV - 1) * sizeof(AbsEdge));
+    
     GraphGenerator Gg = { 
         edges, 
         0,
     };
+
     bool* inT = calloc(G->nV, sizeof(bool));
     int* W = malloc(G->nV*sizeof(int)), nW = 1;
     W[0] = 0;
@@ -261,7 +228,7 @@ Graph* Gpk_Primm(Graph* G){
         int find = false;
         for(int i = 0; i < nW; i++){
             int u = W[i];
-            for(int j = 0; j < G->at[W[i]].num_neighbors; j++){
+            for(int j = 0; j < G->at[u].num_neighbors; j++){
                 int v = G->at[u].neighbors[j].id;
                 int w = G->at[u].neighbors[j].weight;
                 if(inT[v]) continue;
@@ -289,36 +256,3 @@ Graph* Gpk_Primm(Graph* G){
     return T;
 }
 
-int main(){
-    AbsEdge A[] = {
-        {0, 1, 2},
-        {0, 3, 7},
-        {0, 4, 4},
-        {1, 2, 8},
-        {1, 4, 7},
-        {2, 3, 11},
-        {2, 5, 10},
-        {4, 5, 5}
-    };
-
-    GraphGenerator Gg = {
-        A,
-        sizeof(A) / sizeof(A[0])
-    };
-    Graph* gp = new_Graph(&Gg);
-    printf("Grafo:\n");
-    print_graph(gp);    
-    
-    Graph* Min_Tree = Gpk_Primm(gp);
-    printf("Primm:\n");
-    print_graph(Min_Tree);
-    Gpk_free(&Min_Tree);
-
-    Min_Tree = Gpk_Kruskal(gp);
-    printf("Kruskal:\n");
-    print_graph(Min_Tree);
-
-    Gpk_free(&Min_Tree);
-    Gpk_free(&gp);
-    return 0;
-}
