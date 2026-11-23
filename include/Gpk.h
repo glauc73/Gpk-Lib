@@ -13,7 +13,7 @@ typedef struct{
 }RelEdge;
 
 typedef struct{
-    int to, from, weight;
+    int from, to, weight;
 }AbsEdge;
 
 typedef struct{

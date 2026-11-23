@@ -2,7 +2,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "Gpk.h"
+#include "../include/Gpk.h"
+
+#define MINCAP 4
+
+Graph* new_blank_graph(int nV){
+    if(nV <= 0) return NULL;
+    Graph* G = malloc(sizeof(Graph));
+    G->at = calloc(nV, sizeof(Vertex));
+
+    for(int i = 0; i < nV; i++){
+        G->at[i].cap = MINCAP;
+        G->at[i].neighbors = calloc(G->at[i].cap, sizeof(RelEdge));
+        if(!G->at[i].neighbors) {
+            for(int k = 0; k < i; k++){
+                free(G->at[k].neighbors);
+                free(G->at);
+                free(G);
+            }
+            return NULL;
+        }
+    }
+    G->nV = nV;
+    G->nE = 0;
+    return G;
+}
 
 //o programador deve colocar sequencialmente 0, 1, .., N vertices.
 //caso contrario, uma aresta nao declarada entre duas declaradas vai ser tida como existente, mas sem conexão
@@ -161,29 +185,6 @@ fim:
     return res;
 }
 
-Graph* new_blank_graph(int nV){
-    if(nV <= 0) return NULL;
-    Graph* G = malloc(sizeof(Graph));
-    G->at = calloc(nV, sizeof(Vertex));
-
-    for(int i = 0; i < nV; i++){
-        G->at[i].cap = 4;
-        G->at[i].neighbors = calloc(4, sizeof(RelEdge));
-        if(!G->at[i].neighbors) {
-            for(int k = 0; k < i; k++){
-                free(G->at[k].neighbors);
-                free(G->at);
-                free(G);
-            }
-            return NULL;
-        }
-    }
-    G->nV = nV;
-    G->nE = 0;
-    return G;
-}
-
-
 Graph* Gpk_Kruskal(Graph* G){
     if(!G || !G->at) return NULL;
     Graph* Min_Tree = new_blank_graph(G->nV);
@@ -223,6 +224,7 @@ Graph* Gpk_Primm(Graph* G){
     W[0] = 0;
     inT[0] = true;
 
+    float r = 0;
     while(nW < G->nV){
         AbsEdge e_min;
         int find = false;

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-gcc -std=c11 src/*.c -Iinclude -o graph
+gcc -O3 -march=native -std=c11 src/*.c -Iinclude -o benchmark
 
 if [ $? -eq 0 ]; then
     ./graph
