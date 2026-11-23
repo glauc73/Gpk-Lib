@@ -7,7 +7,7 @@
 #define SIZE(X) ((int)(sizeof(X) / sizeof((X)[0])))
 
 int main(){
-    int nv[] = {20, 100, 200, 500, 1000, 2000};
+    int nv[] = {5000, 10000, 15000, 20000};
     float density[] = {0.1, 0.25, 0.5, 0.75, 1};
 
     FILE* fp = fopen("primm.csv", "w");
