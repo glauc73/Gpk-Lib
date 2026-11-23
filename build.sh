@@ -3,8 +3,8 @@
 gcc -O3 -march=native -std=c11 src/*.c -Iinclude -o benchmark
 
 if [ $? -eq 0 ]; then
-    ./graph
-    rm graph
+    ./benchmark
+    rm benchmark 
 else
     echo "Erro na compilação"
     exit 1
